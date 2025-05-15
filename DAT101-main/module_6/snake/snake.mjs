@@ -26,13 +26,16 @@ class TSnakePart extends libSprite.TSprite {
     this.direction = boardCellInfo.direction;
     boardCellInfo.infoType = EBoardCellInfoType.Snake;
     this.index = this.direction;
+    
+    // Ensure visibility
+    this.visible = true;
+    this.alpha = 1;
   }
 
   update(){
     this.x = this.boardCell.col * this.spi.width;
     this.y = this.boardCell.row * this.spi.height;
   }
-
 } // class TSnakePart
 
 
@@ -42,16 +45,18 @@ class TSnakeHead extends TSnakePart {
     this.newDirection = this.direction;
   }
 
- setDirection(aDirection) {
-    if ((this.direction === EDirection.Right || this.direction === EDirection.Left) && (aDirection === EDirection.Up || aDirection === EDirection.Down)) {
+  setDirection(aDirection) {
+    if ((this.direction === EDirection.Right || this.direction === EDirection.Left) && 
+        (aDirection === EDirection.Up || aDirection === EDirection.Down)) {
       this.newDirection = aDirection;
-    } else if ((this.direction === EDirection.Up || this.direction === EDirection.Down) && (aDirection === EDirection.Right || aDirection === EDirection.Left)) {
+    } else if ((this.direction === EDirection.Up || this.direction === EDirection.Down) && 
+               (aDirection === EDirection.Right || aDirection === EDirection.Left)) {
       this.newDirection = aDirection;
     }
   }
 
   update(){
-    GameProps.gameBoard.getCell(this.boardCell.row,this.boardCell.col).direction = this.newDirection;
+    GameProps.gameBoard.getCell(this.boardCell.row, this.boardCell.col).direction = this.newDirection;
     switch (this.newDirection) {
       case EDirection.Up:
         this.boardCell.row--;
@@ -71,38 +76,59 @@ class TSnakeHead extends TSnakePart {
     if (this.checkCollision()) {
       return false; // Collision detected, do not continue
     }
-    // Update the position of the snake element (subclass)
+    // Update the position of the snake element
     super.update();
-    //Check if the snake head is on a bait cell
+    
+    // Check if the snake head is on a bait cell
     const boardCellInfo = GameProps.gameBoard.getCell(this.boardCell.row, this.boardCell.col);
     if(boardCellInfo.infoType === EBoardCellInfoType.Bait) {
       bateIsEaten();
-    }else{
-      /* Decrease the score if the snake head is not on a bait cell */
     }
     boardCellInfo.infoType = EBoardCellInfoType.Snake; // Set the cell to Snake
     return true; // No collision, continue
   }
 
   checkCollision() {
-    let collision = this.boardCell.row < 0 || this.boardCell.row >= GameProps.gameBoard.rows || this.boardCell.col < 0 || this.boardCell.col >= GameProps.gameBoard.cols;
+    // Check if the head is outside the game board
+    let collision = this.boardCell.row < 0 || 
+                    this.boardCell.row >= GameProps.gameBoard.rows || 
+                    this.boardCell.col < 0 || 
+                    this.boardCell.col >= GameProps.gameBoard.cols;
+    
+    // Also check if the head collides with the snake's body
     if(!collision) {
       const boardCellInfo = GameProps.gameBoard.getCell(this.boardCell.row, this.boardCell.col);
       collision = boardCellInfo.infoType === EBoardCellInfoType.Snake;
     }
-    return collision; // Collision detected
+    return collision;
   }
-}
+} // class TSnakeHead
+
 
 class TSnakeBody extends TSnakePart {
-  constructor(aSpriteCanvas, aBoardCell ) {
+  constructor(aSpriteCanvas, aBoardCell) {
     super(aSpriteCanvas, SheetData.Body, aBoardCell);
-    this.index = ESpriteIndex.RL;    
+    
+    // Default to horizontal body segment
+    this.index = ESpriteIndex.RL;
+    
+    // CRITICAL: Ensure visibility is explicitly set
+    this.visible = true;
+    this.alpha = 1;
+    
+    console.log(`Creating body segment at col=${aBoardCell.col}, row=${aBoardCell.row}`);
   }
 
   update(){
+    console.log(`Updating body at (${this.boardCell.col}, ${this.boardCell.row}) with direction ${this.direction}`);
+    
     let spriteIndex = ESpriteIndex.RL;
     let boardCellInfo;
+    
+    // Store old position for reference
+    const oldCol = this.boardCell.col;
+    const oldRow = this.boardCell.row;
+    
     switch (this.direction) {
       case EDirection.Up:
         this.boardCell.row--;
@@ -169,23 +195,43 @@ class TSnakeBody extends TSnakePart {
         }
         break;
     }
+    
+    // Mark the new cell as occupied by snake
+    GameProps.gameBoard.getCell(this.boardCell.row, this.boardCell.col).infoType = EBoardCellInfoType.Snake;
+    
     this.direction = boardCellInfo.direction;
     this.index = spriteIndex;
+    
+    // Update position
     super.update();
+    
+    console.log(`Body moved to (${this.boardCell.col}, ${this.boardCell.row}) with new index ${spriteIndex}`);
   }
 
-  clone(){
-    const newBody = new TSnakeBody(this.spcvs, new TBoardCell(this.boardCell.col, this.boardCell.row));
+  clone() {
+    // Create a new body segment with the same position
+    const newBody = new TSnakeBody(
+      this.spcvs, 
+      new TBoardCell(this.boardCell.col, this.boardCell.row)
+    );
+    
+    // Copy important properties
     newBody.index = this.index;
     newBody.direction = this.direction;
+    
+    // Ensure the new body segment is visible
+    newBody.visible = true;
+    newBody.alpha = 1;
+    
+    console.log(`Cloned body segment at col=${this.boardCell.col}, row=${this.boardCell.row} with index ${this.index}`);
+    
     return newBody;
   }
-
 } // class TSnakeBody
 
 
 class TSnakeTail extends TSnakePart {
-  constructor(aSpriteCanvas,aBoardCell) {
+  constructor(aSpriteCanvas, aBoardCell) {
     super(aSpriteCanvas, SheetData.Tail, aBoardCell);
   }
 
@@ -212,7 +258,6 @@ class TSnakeTail extends TSnakePart {
     this.index = this.direction;
     super.update();
   }
-
 } // class TSnakeTail
 
 
@@ -221,40 +266,123 @@ export class TSnake {
   #head = null;
   #body = null;
   #tail = null;
+  #shouldGrow = false;
+  
   constructor(aSpriteCanvas, aBoardCell) {
     this.#head = new TSnakeHead(aSpriteCanvas, aBoardCell);
     let col = aBoardCell.col - 1;
     this.#body = [new TSnakeBody(aSpriteCanvas, new TBoardCell(col, aBoardCell.row))];
     col--;
     this.#tail = new TSnakeTail(aSpriteCanvas, new TBoardCell(col, aBoardCell.row));
+    
+    // Initialize with direction right
+    this.#head.direction = EDirection.Right;
+    this.#head.index = EDirection.Right;
+    this.#body[0].direction = EDirection.Right;
+    this.#body[0].index = ESpriteIndex.RL; // Horizontal body segment
+    this.#tail.direction = EDirection.Right;
+    this.#tail.index = EDirection.Right;
+    
+    console.log("Snake initialized with length", this.#body.length + 2);
   } // constructor
 
   draw() {
-    this.#head.draw();
+    // Debug info
+    console.log(`Drawing snake - Head at (${this.#head.boardCell.col}, ${this.#head.boardCell.row})`);
+    
+    // Check body segments
     for (let i = 0; i < this.#body.length; i++) {
+      // Force visibility to be true
+      if (!this.#body[i].visible) {
+        console.log(`Fixed visibility for body segment ${i}`);
+        this.#body[i].visible = true;
+        this.#body[i].alpha = 1;
+      }
+      
+      console.log(`Drawing body ${i} at (${this.#body[i].boardCell.col}, ${this.#body[i].boardCell.row}) - visible: ${this.#body[i].visible}`);
       this.#body[i].draw();
     }
+    
+    // Draw tail and head
+    console.log(`Drawing tail at (${this.#tail.boardCell.col}, ${this.#tail.boardCell.row})`);
     this.#tail.draw();
+    
+    this.#head.draw();
   } // draw
 
-  //Returns true if the snake is alive
-  update(){
+  // Returns true if the snake is alive
+  update() {
     if (this.#isDead) {
       return false; // Snake is dead, do not continue
     }
-    if(this.#head.update()) {
+    
+    // Variable to hold cloned part if needed for growth
+    let clonePart = null;
+    
+    // If we should grow, clone the last body part BEFORE it moves
+    if (this.#shouldGrow && this.#body.length > 0) {
+      // Get the last body part (the one closest to the tail)
+      const lastBodyPart = this.#body[this.#body.length - 1];
+      
+      // Clone it before it moves
+      clonePart = lastBodyPart.clone();
+      
+      console.log(`Cloned last body part at (${clonePart.boardCell.col}, ${clonePart.boardCell.row})`);
+    }
+    
+    if (this.#head.update()) {
+      // Update all body segments
       for (let i = 0; i < this.#body.length; i++) {
         this.#body[i].update();
       }
-      this.#tail.update();  
-    }else if(!this.#isDead){
+      
+      // Handle growth or tail movement
+      if (this.#shouldGrow && clonePart) {
+        // Add the cloned part to the body array
+        this.#body.push(clonePart);
+        
+        // Reset the growth flag
+        this.#shouldGrow = false;
+        
+        console.log(`Snake grew! New length: ${this.#body.length + 2}`);
+      } else {
+        // Only update the tail if we're not growing
+        this.#tail.update();
+      }
+    } else if (!this.#isDead) {
       this.#isDead = true;
       return false; // Collision detected, do not continue
     }
+    
     return true; // No collision, continue
   }
 
   setDirection(aDirection) {
     this.#head.setDirection(aDirection);
   } // setDirection
-}
+  
+  // Method to grow the snake when eating bait
+  grow() {
+    this.#shouldGrow = true;
+    console.log("Snake will grow on next update!");
+  }
+  
+  // Helper method to get snake length (for debugging)
+  getLength() {
+    return this.#body.length + 2; // Count head and tail too
+  }
+  
+  // Debug helper method
+  diagnose() {
+    console.log("=== SNAKE DIAGNOSIS ===");
+    console.log(`Head: col=${this.#head.boardCell.col}, row=${this.#head.boardCell.row}, visible=${this.#head.visible}, index=${this.#head.index}`);
+    console.log(`Body segments: ${this.#body.length}`);
+    
+    for (let i = 0; i < this.#body.length; i++) {
+      console.log(`  Segment ${i}: col=${this.#body[i].boardCell.col}, row=${this.#body[i].boardCell.row}, visible=${this.#body[i].visible}, index=${this.#body[i].index}, alpha=${this.#body[i].alpha}`);
+    }
+    
+    console.log(`Tail: col=${this.#tail.boardCell.col}, row=${this.#tail.boardCell.row}, visible=${this.#tail.visible}, index=${this.#tail.index}`);
+    console.log("======================");
+  }
+} // end of TSnake class

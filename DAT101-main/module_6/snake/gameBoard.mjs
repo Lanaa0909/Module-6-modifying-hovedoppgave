@@ -1,49 +1,67 @@
 "use strict";
-
-import { EDirection } from "./snake.mjs";
-
-
-export const GameBoardSize = { Cols: 24, Rows: 18 };
-
+//------------------------------------------------------------------------------------------
+//----------- variables and objects --------------------------------------------------------
+//------------------------------------------------------------------------------------------
 export const EBoardCellInfoType = { Empty: 0, Snake: 1, Bait: 2 };
+export const GameBoardSize = { Rows: 15, Cols: 20 }; // Adjust these values as needed
 
+//------------------------------------------------------------------------------------------
+//----------- Classes ---------------------------------------------------------------------
+//------------------------------------------------------------------------------------------
 export class TBoardCell {
   constructor(aCol, aRow) {
     this.col = aCol;
     this.row = aRow;
   }
-}// End off class TBoardCell
-//------------------------------------------------------------------------------------------
+}
 
-export class TBoardCellInfo {
+class TBoardCellInfo {
   constructor() {
-    this.direction = EDirection.Right;
     this.infoType = EBoardCellInfoType.Empty;
+    this.direction = 1; // Default direction (Right)
+    this.alpha = 1.0; // Add alpha property to track visibility
   }
-}// End off class TBoardCellInfo
-//------------------------------------------------------------------------------------------
+}
 
 export class TGameBoard {
-  constructor() {
-    this.cols = GameBoardSize.Cols;
-    this.rows = GameBoardSize.Rows;
-    this.gameBoard = [];
-
-    for (let i = 0; i < this.rows; i++) {
-      const row = [];
-      for (let j = 0; j < this.cols; j++) {
-        row.push(new TBoardCellInfo());
-      }
-      this.gameBoard.push(row);
-    }
-  } // End of constructor
-
-  getCell(aRow, aCol) {
-    if (aRow < 0 || aRow >= this.rows || aCol < 0 || aCol >= this.cols) {
-      return null;
-    }
-    return this.gameBoard[aRow][aCol];
-  } // End of getCell
+  #board = [];
   
-}// End of class TGameBoard
-//------------------------------------------------------------------------------------------
+  constructor() {
+    this.rows = GameBoardSize.Rows;
+    this.cols = GameBoardSize.Cols;
+    
+    // Initialize the game board with empty cells
+    for (let row = 0; row < this.rows; row++) {
+      this.#board[row] = [];
+      for (let col = 0; col < this.cols; col++) {
+        this.#board[row][col] = new TBoardCellInfo();
+      }
+    }
+    
+    console.log("Game board initialized with size:", this.rows, "rows x", this.cols, "columns");
+  }
+  
+  getCell(aRow, aCol) {
+    // Boundary check
+    if (aRow >= 0 && aRow < this.rows && aCol >= 0 && aCol < this.cols) {
+      return this.#board[aRow][aCol];
+    }
+    
+    // Return a new cell if out of bounds (for safer handling)
+    console.warn("Attempted to access cell outside board boundaries:", aRow, aCol);
+    return new TBoardCellInfo();
+  }
+  
+  resetBoard() {
+    // Reset all cells to empty
+    for (let row = 0; row < this.rows; row++) {
+      for (let col = 0; col < this.cols; col++) {
+        this.#board[row][col].infoType = EBoardCellInfoType.Empty;
+        this.#board[row][col].direction = 1; // Reset to default direction
+        this.#board[row][col].alpha = 1.0; // Reset alpha to full visibility
+      }
+    }
+    
+    console.log("Game board has been reset");
+  }
+}
