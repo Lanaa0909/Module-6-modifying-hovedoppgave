@@ -135,11 +135,11 @@ function loadGame() {
     { x: 30, y: 90 } // Position in corner for score
   );
   gameScoreDisplay.justify = libSprite.ESpriteNumberJustifyType.Left;
+  gameScoreDisplay.alpha = 0.5; // Make the numbers slightly transparent/faded
+  gameScoreDisplay.scale = 0.5; // Make the numbers smaller
   gameScoreDisplay.digits = 3; // Allow up to 3 digits
   gameScoreDisplay.value = 0;
   gameScoreDisplay.visible = false;
-  gameScoreDisplay.alpha = 0.7; // Make the numbers slightly transparent/faded
-  gameScoreDisplay.scale = 0.7; // Make the numbers smaller
   
   // Create bait counter display (positioned above the score display)
   baitCountDisplay = new libSprite.TSpriteNumber(
@@ -148,11 +148,11 @@ function loadGame() {
     { x: 30, y: 30 } // Position in corner for bait count, above score
   );
   baitCountDisplay.justify = libSprite.ESpriteNumberJustifyType.Left;
+  baitCountDisplay.alpha = 0.5; // Make the numbers slightly transparent/faded
+  baitCountDisplay.scale = 0.5; // Make the numbers smaller
   baitCountDisplay.digits = 2; // Allow up to 2 digits for bait count
   baitCountDisplay.value = 0;
   baitCountDisplay.visible = false;
-  baitCountDisplay.alpha = 0.7; // Make the numbers slightly transparent/faded
-  baitCountDisplay.scale = 0.7; // Make the numbers smaller
 
   // Initialize the menu system
   initMenu(spcvs);

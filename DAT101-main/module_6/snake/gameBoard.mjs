@@ -3,7 +3,7 @@
 //----------- variables and objects --------------------------------------------------------
 //------------------------------------------------------------------------------------------
 export const EBoardCellInfoType = { Empty: 0, Snake: 1, Bait: 2 };
-export const GameBoardSize = { Rows: 15, Cols: 20 }; // Adjust these values as needed
+export const GameBoardSize = { Rows: 18, Cols: 24 }; // Adjust these values as needed
 
 //------------------------------------------------------------------------------------------
 //----------- Classes ---------------------------------------------------------------------
